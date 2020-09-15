@@ -1,0 +1,251 @@
+---
+title: "Creative Assignment 1"
+author: "Zoe Iacovino"
+date: "9/13/2020"
+output: html_document
+toc_depth: 2
+---
+# New Orleans
+
+```{r, Loading Library, census, results= 'hide', message=FALSE}
+library(tidyverse)
+library(tidycensus)
+library(ggplot2)
+library(prettydoc)
+library(ggthemes)
+area_vars_2010 <- load_variables(2010, "sf1")
+```
+
+##Loading Data
+
+I selected 8 variables: 
+<ul>
+<li> The total of housing units:H001001
+<li> The total of households in urbanized areas: H002003
+<li> The total units that are vacant: H005001
+<li> The total of vacant units used seasonally: H005006
+<li> The total population: P001001
+<li> The race of the primary householder: H005008
+<li> The percentage of houses with three or more generations:PCT014002
+<li> THe Median age of residents P013001
+</ul>
+
+From these, I am intersested in 
+<ul>
+<li> The percentage of units that are vacant
+<li> The percentage of the units that vacant seasonally
+<li> The percentage of vacant units in urbanized areas
+<li> The race of householders
+<li> The percentage of multigeneration housholds
+<li> Whether a tract is urban or not
+
+
+```{r Choosing variables, results='hide', message=FALSE}
+vars <- c(tot_hh = "H001001",
+         tot_urban_hh = "H002003",
+         tot_vacant = "H005001",
+         tot_vacant_fr = "H005002",
+         tot_vacant_rno = "H005003",
+         tot_vacant_fs = "H005004",
+         tot_vacant_sno = "H005005",
+         tot_vacant_seas = "H005006",
+         tot_vacant_migr = "H005007",
+         tot_pop = "P001001",
+         race_hholder = "H006001",
+         hh_multigen = "PCT014002",
+         med_age = "P013001",
+         nh_white_hhr = "H006002",
+         nh_black_hhr = "H006003",
+         nh_asian_hhr = "H006005",
+         hispanic_hhr = "H007010",
+         twop_hhr = "H006008")
+
+NOLA_tracts <- get_decennial(geography = "tract", variables = vars,
+                           state = "LA", county = "Orleans",
+                           output = "wide") %>%
+  mutate(urban = (tot_urban_hh == tot_hh) ,
+         pct_multigen = (hh_multigen/ tot_hh),
+         pct_vacant = (tot_vacant/tot_hh),
+         pct_vac_seasonal = (tot_vacant_seas/ tot_vacant*100),
+         pct_vac_forrent = (tot_vacant_fr/ tot_vacant),
+         pct_vac_rented = (tot_vacant_rno/ tot_vacant),
+         pct_vac_forsale = (tot_vacant_fs/ tot_vacant),
+         pct_vac_sold = (tot_vacant_sno/ tot_vacant),
+         pct_vac_migrant = (tot_vacant_migr/ tot_vacant),
+         pct_vac_urb = (tot_vacant / tot_urban_hh),
+         maj_rac_eth_hhr = case_when(
+           nh_white_hhr / race_hholder > 0.5 ~ "hhr_white",
+           nh_black_hhr / race_hholder > 0.5 ~ "hhr_black",
+           nh_asian_hhr / race_hholder > 0.5 ~ "hhr_asian",
+           hispanic_hhr / race_hholder > 0.5 ~ "hispanic",
+           twop_hhr /race_hholder > 0.5 ~ "multiracial",
+           (nh_white_hhr + nh_black_hhr + nh_asian_hhr + hispanic_hhr + twop_hhr) /
+             race_hholder < 0.5 ~ "other",
+           TRUE ~ "None"))%>%
+  filter(tot_pop > 0, tot_hh > 0) %>%
+  select(GEOID, urban, pct_vacant, pct_vac_urb, tot_vacant_seas, tot_vacant_fr, tot_vacant_rno, tot_vacant_fs, tot_vacant_sno, tot_vacant_migr, pct_vac_seasonal, pct_multigen, maj_rac_eth_hhr, tot_hh, tot_pop, med_age) 
+```
+<b> Final Variables Chosen </b>
+The dataset includes 173 tracts in Orleans Parish with 15 variables, the main of which are: 
+<ol>
+<li> *urban* The units in urbanized tracts, categorical
+<li> *maj_rac_eth_hhr* The majority of householders by race
+<li> *pct_vacant* The percentage of units that are vacant, as well as variables that break it down into for rent, rented, for sale, sold, seasonal, and for migrant workers.
+<li> *pct_vac_urb* The percentage of vacant units that are in urbanized areas
+<li> *pct_multigen* Percentage of houses with three or more generations
+</ol>
+
+```{r Plotting 1}
+ggplot(NOLA_tracts, 
+       aes(x = pct_multigen,
+           y = med_age,
+           size = tot_hh,
+           shape = urban,
+           color = urban
+           )) +
+  geom_point() +
+  scale_size_continuous(name = "Households in Tract") +
+  scale_x_continuous(name = "Percent of vacant homes",
+                     breaks = seq(0, 1, by = 0.1),
+                     labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
+  scale_y_continuous(name = "Median age within tract",
+                     breaks = seq(10, 80, by = 10)) +
+  scale_shape(name = element_blank(), 
+              labels = c("Rural tract", "Urban tract")
+              ) +
+  theme_bw() +
+  theme(legend.key.size = unit(0.1, "cm"))
+```
+
+```{r Plotting 2}
+ggplot(NOLA_tracts, 
+       aes(x = pct_vacant*100,
+           y = tot_hh,
+           color = "black")) +
+  geom_point(alpha = 0.5, size = 1.5, color = "light blue") +
+  stat_smooth(color = "#dfc7f2", linetype = 2, size = 1.5) +
+  scale_x_continuous(name = "Percent of vacant units",
+                     labels = c("100 or 0", "20%", "40%", "60%", "80%", "100%"),
+                     breaks = seq(0, 100, by = 20)) +
+  scale_y_continuous(name = "Households in Tract",
+                     trans = "log",
+                     breaks = c(10, 100, 1000, 10000),
+                     labels = c("10", "100", "1,000", "10,000")) +
+  coord_polar(theta = "x")
+  
+```
+```{r Plotting 3}
+ggplot(NOLA_tracts, 
+       aes(x = maj_rac_eth_hhr,
+           y = pct_multigen)) +
+  geom_point() +
+  scale_x_discrete(name = "Majority race/ethnicity",
+                       labels = c("Asian",
+                                  "Black",
+                                  "White",
+                                  "No majority")) +
+  scale_y_continuous(name = "Percentage of Multigenerational homes within tract",
+                     breaks = seq(10, 80, by = 10)) +
+  theme_tufte() 
+```
+
+```{r Plotting 4}
+ggplot(NOLA_tracts, 
+       aes(x = maj_rac_eth_hhr,
+           y = pct_multigen,
+           color = maj_rac_eth_hhr)) +
+  geom_point(position = "jitter",
+             size = 2.5,
+             alpha = 0.5) +
+  scale_x_discrete(name = "Majority race/ethnicity",
+                       labels = c("Asian",
+                                  "Black",
+                                  "White",
+                                  "No majority")) +
+  scale_color_economist()   +
+  scale_y_continuous(name = "Percentage of Multigenerational homes within tract",
+                     breaks = seq(10, 80, by = 10)) +
+  theme_economist(base_size = 10, base_family = "sans",
+  horizontal = TRUE, dkpanel = FALSE) +
+  theme(legend.position = "none")
+```
+
+
+```{r Plotting 5}
+ggplot(NOLA_tracts, 
+       aes(x = urban,
+           y = med_age,
+           color = urban)) +
+  geom_boxplot() +
+  scale_x_discrete(name = "Urbanized or Rural Tract",
+                       labels = c("Rural",
+                                  "Urban",
+                                  "Other"
+                                 )) +
+  scale_y_continuous(name = "Median age within tract",
+                     breaks = seq(10, 80, by = 10)) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+```
+```{r Plotting 6}
+
+ggplot(NOLA_tracts, 
+       aes (x=tot_vacant_seas,
+            color = urban
+           )) + 
+  geom_histogram(binwidth = 5) +
+  theme_fivethirtyeight(base_size = 10, base_family = "sans")
+
+```
+ 
+```{r Plotting 7}
+pie_chart <- ggplot(NOLA_tracts, 
+                    aes(x = 1, 
+                        fill =  urban)) +
+  geom_bar(position = "fill") +
+  coord_polar(theta = "y") +
+  scale_y_continuous(name = "Number of tracts") +
+  scale_fill_discrete(name = "Urban or Rural Tracts",) +
+  theme_void() 
+
+pie_chart
+
+```
+
+```{r Plotting 8}
+ggplot(data=NOLA_tracts, aes(x=maj_rac_eth_hhr, y=tot_hh)) +
+  geom_bar(stat="identity", color = "light blue", fill = "light blue") +
+  scale_x_discrete(name = "Race of Householder", 
+                 labels = c("Asian", "Black", "White", "Other"))+
+  scale_y_continuous(name= "Total Households")
+```
+
+```{r Plotting 9}
+ggplot(data=NOLA_tracts, aes
+       (x=maj_rac_eth_hhr, y=pct_multigen*100, group = urban), 
+        geom_line(linetype= dashed)+
+       scale_y_continuous(name = "Percent Multigenerational Households", 
+                          breaks = seq(0, 5, by = 1))
+  
+)
+```
+ok so apparently i can't draw a line??? cute
+
+```{r Plotting 10}
+ggplot(NOLA_tracts, aes(x = maj_rac_eth_hhr, fill = urban)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(name = "percent of tracts",
+                     breaks = seq(0, 1, by = 0.1),
+                     labels = paste(seq(0,100, by = 10), "%", sep ="")) +
+  scale_x_discrete(name = "Majority race/ethnicity",
+                       labels = c("Asian",
+                                  "Black",
+                                  "White",
+                                  "No majority")) +
+  scale_fill_discrete(name = element_blank(),
+                        labels = c("Rural tracts",
+                                   "Urban tracts")) +
+  theme_minimal()
+```
+
