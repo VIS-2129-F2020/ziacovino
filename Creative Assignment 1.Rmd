@@ -232,6 +232,22 @@ ggplot(data=NOLA_tracts, aes
 ```
 ok so apparently i can't draw a line??? cute
 
+#Taelor
+Haha, happens to the best of us.
+
+Your missing a ) and a + at the end of your first line of code 
+ggplot(data=NOLA_tracts, aes(x=maj_rac_eth_hhr, y=pct_multigen*100, group = urban)) +
+
+You'll need "" around dashed for R to recognize the command 
+geom_line(linetype= dashed)
+
+And you can delete that last parentheses. 
+
+After I made those changes R graphed your data! But I left your original code untouched in case you wanted to do or add anything else to it. 
+
+
+
+
 ```{r Plotting 10}
 ggplot(NOLA_tracts, aes(x = maj_rac_eth_hhr, fill = urban)) +
   geom_bar(position = "fill") +
