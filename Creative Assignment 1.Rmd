@@ -3,7 +3,6 @@ title: "Creative Assignment 1"
 author: "Zoe Iacovino"
 date: "9/13/2020"
 output: html_document
-toc_depth: 2
 ---
 # New Orleans
 
@@ -16,7 +15,7 @@ library(ggthemes)
 area_vars_2010 <- load_variables(2010, "sf1")
 ```
 
-##Loading Data
+<b> Loading Data </b>
 
 I selected 8 variables: 
 <ul>
@@ -30,7 +29,7 @@ I selected 8 variables:
 <li> THe Median age of residents P013001
 </ul>
 
-From these, I am intersested in 
+From these, I am interested in 
 <ul>
 <li> The percentage of units that are vacant
 <li> The percentage of the units that vacant seasonally
@@ -90,11 +89,13 @@ The dataset includes 173 tracts in Orleans Parish with 15 variables, the main of
 <ol>
 <li> *urban* The units in urbanized tracts, categorical
 <li> *maj_rac_eth_hhr* The majority of householders by race
-<li> *pct_vacant* The percentage of units that are vacant, as well as variables that break it down into for rent, rented, for sale, sold, seasonal, and for migrant workers.
+<li> *pct_vacant* The percentage of units that are vacant
 <li> *pct_vac_urb* The percentage of vacant units that are in urbanized areas
 <li> *pct_multigen* Percentage of houses with three or more generations
+<li> *tot_hh* Total Households
 </ol>
-
+<br> <b> Plotting Some Graphs </b>
+<br> 1. Median Age of tract distributed by percentage of multigenerational homes, urbanization, and number of households in tract
 ```{r Plotting 1}
 ggplot(NOLA_tracts, 
        aes(x = pct_multigen,
@@ -105,7 +106,7 @@ ggplot(NOLA_tracts,
            )) +
   geom_point() +
   scale_size_continuous(name = "Households in Tract") +
-  scale_x_continuous(name = "Percent of vacant homes",
+  scale_x_continuous(name = "Percent of Multigenerational homes",
                      breaks = seq(0, 1, by = 0.1),
                      labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
   scale_y_continuous(name = "Median age within tract",
@@ -116,7 +117,7 @@ ggplot(NOLA_tracts,
   theme_bw() +
   theme(legend.key.size = unit(0.1, "cm"))
 ```
-
+<br> 2. Distribution of vacant households 
 ```{r Plotting 2}
 ggplot(NOLA_tracts, 
        aes(x = pct_vacant*100,
@@ -134,6 +135,7 @@ ggplot(NOLA_tracts,
   coord_polar(theta = "x")
   
 ```
+<br> 3. Houesholds with three or more generations by Race
 ```{r Plotting 3}
 ggplot(NOLA_tracts, 
        aes(x = maj_rac_eth_hhr,
@@ -148,7 +150,7 @@ ggplot(NOLA_tracts,
                      breaks = seq(10, 80, by = 10)) +
   theme_tufte() 
 ```
-
+<br>4. Houesholds with three or more generations by Race
 ```{r Plotting 4}
 ggplot(NOLA_tracts, 
        aes(x = maj_rac_eth_hhr,
@@ -170,7 +172,7 @@ ggplot(NOLA_tracts,
   theme(legend.position = "none")
 ```
 
-
+<br>5. Median Age of Urban and Rural Tracts
 ```{r Plotting 5}
 ggplot(NOLA_tracts, 
        aes(x = urban,
@@ -188,6 +190,7 @@ ggplot(NOLA_tracts,
   theme(legend.position = "none")
 
 ```
+<br>6. Distribution of Seasonally Vacant Households 
 ```{r Plotting 6}
 
 ggplot(NOLA_tracts, 
@@ -198,7 +201,7 @@ ggplot(NOLA_tracts,
   theme_fivethirtyeight(base_size = 10, base_family = "sans")
 
 ```
- 
+<br> 7. Distribution of Rural and Urban tracts in Orleans Parish
 ```{r Plotting 7}
 pie_chart <- ggplot(NOLA_tracts, 
                     aes(x = 1, 
@@ -212,42 +215,27 @@ pie_chart <- ggplot(NOLA_tracts,
 pie_chart
 
 ```
-
+<br>8. Total Households by Race of Primary Householder
 ```{r Plotting 8}
 ggplot(data=NOLA_tracts, aes(x=maj_rac_eth_hhr, y=tot_hh)) +
   geom_bar(stat="identity", color = "light blue", fill = "light blue") +
   scale_x_discrete(name = "Race of Householder", 
                  labels = c("Asian", "Black", "White", "Other"))+
   scale_y_continuous(name= "Total Households")
-```
-
-```{r Plotting 9}
-ggplot(data=NOLA_tracts, aes
-       (x=maj_rac_eth_hhr, y=pct_multigen*100, group = urban), 
-        geom_line(linetype= dashed)+
-       scale_y_continuous(name = "Percent Multigenerational Households", 
-                          breaks = seq(0, 5, by = 1))
   
-)
 ```
-ok so apparently i can't draw a line??? cute
+<br>9. Vacant Households by total population
+```{r Plotting 9}
+ggplot(data=NOLA_tracts, aes (x=tot_pop, y=pct_vac_urb))+ 
+       geom_line(linetype= "solid") +
+       scale_x_continuous(name = "Total Population")+
+       scale_y_continuous(name = "Percent Vacant in Urbanized Tracts",
+                          breaks = seq(0, 1, by = 0.1),
+                     labels = paste(seq(0,100, by = 10), "%", sep =""))
 
-#Taelor
-Haha, happens to the best of us.
+```
 
-You're missing a ) and a + at the end of your first line of code. Anytime you want to add a function to a ggplot object a + is the way to go. 
-ggplot(data=NOLA_tracts, aes(x=maj_rac_eth_hhr, y=pct_multigen*100, group = urban)) +
-
-You'll need "" around dashed for R to recognize the command. 
-geom_line(linetype= dashed)
-
-And you can delete that last parentheses at the end of your code chunk.  
-
-After I made those changes R graphed your data! But I left your original code untouched in case you wanted to do or add anything else to it. 
-
-
-
-
+<br>10. Race of Householders in Urban and Rural Tracts
 ```{r Plotting 10}
 ggplot(NOLA_tracts, aes(x = maj_rac_eth_hhr, fill = urban)) +
   geom_bar(position = "fill") +
