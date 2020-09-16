@@ -1,0 +1,144 @@
+---
+title: "Creative Assignment 2"
+author: "Zoe Iacovino"
+date: "9/20/2020"
+output: html_document
+---
+```{r Loading Librarys and China Map}
+
+                 
+library(ggplot2)
+theme_set(theme_bw())
+library(sf)
+library(sp)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(rnaturalearthhires)
+library(rgeos)
+library(ggspatial)
+library(tidyverse)
+library(cartogram)
+library(ggthemes)
+library(wesanderson)
+
+world <- ne_countries(scale = 50, returnclass = "sf")
+
+china_provincies <- ne_states(country = "China", returnclass = "sf")
+
+china_map <- ggplot(china_provincies) +
+  geom_sf() +
+  theme_bw()
+
+china_map
+```
+```{r US Map, filtered to not include AK and HI}
+US_states <- ne_states(country = "United States of America", 
+                       returnclass = "sf") %>%
+  filter(name != "Alaska",
+         name != "Hawaii")
+
+US_map <- ggplot(US_states) +
+  geom_sf() +
+  theme_bw()
+
+US_map
+
+    
+```
+```{r South America no projection, GDP data}
+sa_countries <- world %>%
+  filter(continent == "South America")
+
+
+pal <- wes_palette("Zissou1", 100, type = "continuous")
+
+sa_map <- ggplot(sa_countries) +
+  geom_sf(aes(fill = gdp_md_est)) + 
+  scale_fill_gradientn(colors = pal, name = "GDP")
+  
+
+sa_map
+```
+```{r AEA Projection, SR-ORG:6820 AEA Brazil}
+aea_brazil <-"+proj=aea +lat_1=-2 +lat_2=-22 +lat_0=-12 +lon_0=-54 +x_0=0 +y_0=0 +a=6378160 +b=6356537.557298475 +units=m +no_defs"
+
+sa_map_aea <- ggplot(sa_countries) +
+  geom_sf(aes(fill = gdp_md_est)) +
+  coord_sf(crs = aea_brazil)+
+  scale_fill_gradientn(colors = pal, name = "GDP")
+
+sa_map_aea
+
+```
+```{r SR-ORG 86 SAD69 Brazil Polyconic Zeroed False Northing and Easting}
+polyconic <- "+proj=poly +lat_0=0 +lon_0=-54 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs " 
+sa_map_ply <- ggplot(sa_countries) +
+  geom_sf(aes(fill = gdp_md_est)) +
+  coord_sf(crs = polyconic)+
+  scale_fill_gradientn(colors = pal, name = "GDP")
+
+sa_map_ply
+```
+
+```{r SR-ORG:7179 PSAD_1956_UTM_ZONE_19S}
+utm_chile <- "+proj=utm +zone=19 +south +ellps=intl +units=m +no_defs "
+
+sa_map_utm <- ggplot(sa_countries) +
+  geom_sf(aes(fill = gdp_md_est)) +
+  coord_sf(crs = utm_chile)+
+  scale_fill_gradientn(colors = pal, name = "GDP")
+
+sa_map_utm
+
+```
+
+```{r Cartogram 1 Continuous Population}
+#Transforming Data
+
+sa_transformed <- sa_countries %>% 
+  st_transform(crs = aea_brazil)%>%
+  select (name, pop_est, gdp_md_est)
+  
+
+#Cartogram
+sa_gdp_cartogram <- sa_transformed %>%
+  cartogram_cont("pop_est")
+
+ggplot(data = sa_gdp_cartogram, aes(fill = gdp_md_est))+
+       geom_sf(color = NA) +
+  scale_fill_gradientn(
+    name = "GDP", colors = pal) +
+  theme_map() +
+  theme(legend.background = element_blank())
+
+```
+
+```{r Cartogram 2 Non Continuous Population}
+
+
+sa_gdp_NCcartogram <- sa_transformed %>%
+  cartogram_ncont("pop_est")
+
+ggplot(sa_gdp_NCcartogram, aes(fill = gdp_md_est))+
+       geom_sf()+
+      scale_fill_gradientn(
+    name = "GDP", colors = pal) +
+      theme_map()+
+  theme(legend.background = element_blank())
+
+```
+
+
+```{r}
+sa_cartogram_dorling <- sa_transformed %>%
+  cartogram_dorling("pop_est")
+
+ggplot(sa_cartogram_dorling, aes(fill = gdp_md_est)) +
+  geom_sf(color = NA) +
+  scale_fill_viridis_c(
+    name = "GDP") +
+  theme_map() +
+  theme(legend.background = element_blank())
+```
+
+
