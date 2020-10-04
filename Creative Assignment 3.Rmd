@@ -27,9 +27,15 @@ Polygons D: Boston Open Spaces
 ```{r Datasets}
 MA_state_plane <- "+proj=lcc +lat_1=41.71666666666667 +lat_2=42.68333333333333 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000 +ellps=GRS80 +units=m +no_defs"
 
+lat_lon_CRS <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
+
 
 #Points A: Accidents 
-accidents <- st_as_sf(read.csv("Vision_Zero_Crash_Records.csv"), coords = c("x_cord", "y_cord"), crs= MA_state_plane)
+accidents <- st_as_sf(read.csv("Vision_Zero_Crash_Records.csv"), 
+                      coords = c("long", "lat"), 
+                      crs= lat_lon_CRS)
+
 
 #Points B: Pedestrian Ramps 
 ramps <- st_read("https://opendata.arcgis.com/datasets/ee5ae0ec9a3e4ba9b12a3f16415cc370_3.geojson",
@@ -46,8 +52,8 @@ parks<- st_read("https://opendata.arcgis.com/datasets/2868d370c55d4d458d4ae2224e
 
 #Transforming Data
 
-#accidents <- accidents %>%
- #st_transform(MA_state_plane)
+accidents <- accidents %>%
+ st_transform(MA_state_plane)
 
 ramps <- ramps %>%
   st_transform(MA_state_plane)
@@ -61,17 +67,14 @@ parks <- parks %>%
 
 
 ggplot() +
-  #geom_sf(data = zipcodes, fill = NA, color = "black", size = 2)+ 
-  #geom_sf(data = parks, fill = "green")+ 
-  #geom_sf(data = ramps, size = 0.01) +
-  geom_sf(data= accidents, color = "red", size = .01) +
+  geom_sf(data = zipcodes, fill = NA, color = "black", size = 2)+ 
+  geom_sf(data = parks, fill = "darkgreen")+ 
+  geom_sf(data = ramps, size = 0.01) +
+  geom_sf(data= accidents, color = "maroon", size = .01) +
   theme_map() +
   annotation_scale()
 
 ```
-
-
-
 
 
 The number and proportion of [accidents] points within a specified distance of [pedestrian ramp] points
@@ -79,7 +82,7 @@ The number and proportion of [accidents] points within a specified distance of [
 ```{r Spatial Calculations 1}
 
 ramps_buffer <- st_buffer(ramps, dist = 10)%>%
-  st_union
+  st_union()
 
 ggplot(ramps_buffer)+
   geom_sf()+
@@ -93,9 +96,8 @@ ggplot(ramps_buffer) +
           color = "red", 
           size = 0.01) +
   theme_map()
-
 accidents <- accidents %>%
-  st_join(accidents_ramps) %>%
+  st_join(accidents_ramps) 
   mutate(by_ramps = !is.na(Name.y))
 
 n_ramps_accidents <- sum(accidents$by_ramps)
@@ -127,9 +129,9 @@ ggplot() +
   annotate(geom = "text", x = left_side, 
            y = top_side, 
            label = paste("Of the ", 
-                         prettyNum(n_trees, big.mark = ","),
+                         prettyNum(n_accidents, big.mark = ","),
                          " accidents in Boston\n", 
-                         prettyNum(n_parking_trees, big.mark = ","),
+                         prettyNum(n_ramps_accidents, big.mark = ","),
                          " (", 
                          prettyNum(100*pct_parking_trees, digits = 0),
                          "%) are within 10\nmeters of a pedestrian ramp.",
