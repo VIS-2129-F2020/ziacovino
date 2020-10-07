@@ -12,7 +12,10 @@ library(tidyverse)
 library(sf)
 library(ggthemes)
 library(ggspatial)
+library(units)
 ```
+
+
 ```{r Loading Data}
 polling_loc<- st_read("https://data.cambridgema.gov/api/geospatial/krvc-8hz2?method=export&format=KML")
 ```
@@ -45,6 +48,8 @@ otp_setup(otp = path_otp, dir = path_data, memory =1024)
 # Connect to opentripplanner
 otpcon <- otp_connect()
 ```
+
+
 ## Creating Isochrones
 ```{r}
 iso_5min_walk <- 
@@ -64,6 +69,9 @@ iso_all_modes <- rbind(iso_5min_drive, iso_5min_walk)
 otp_stop()
 
 ```
+
+
+## 5 Minute Walk and Drivesheds for Cambridge Polling Locations
 ```{r}
 right_side <- st_bbox(iso_all_modes)$xmax
 left_side  <- st_bbox(iso_all_modes)$xmin
@@ -71,7 +79,7 @@ top_side <- st_bbox(iso_all_modes)$ymax
 bottom_side <- st_bbox(iso_all_modes)$ymin
 
 ggplot(iso_all_modes) +
-  annotation_map_tile(zoomin = 0, type = "osmtransport", progress = "none") +
+  annotation_map_tile(zoomin = 0, type = "hotstyle", progress = "none") +
   geom_sf(aes(fill = mode), alpha = 0.5) +
   geom_sf(data = polling_loc) +
   coord_sf(xlim = c(left_side, right_side), 
@@ -82,11 +90,14 @@ ggplot(iso_all_modes) +
   labs(caption = "Basemap Copyright OpenStreetMap contributors")
 ```
 
+
+## Walking and Driving Walkshed Comparison
 ```{r Comparing Isochron areas}
 iso_areas <- iso_all_modes %>%
   mutate(area = st_area(iso_all_modes)) %>%
   st_set_geometry(NULL) %>%
-  pivot_wider(names_from = mode, values_from = area, values_fn= length) 
+  pivot_wider(names_from = mode, values_from = area, values_fn= mean) %>%
+  filter(!is.na(drive), !is.na(walk))
 
 ggplot(iso_areas, 
        aes(x = as.numeric(walk), y = as.numeric(drive))) +
@@ -99,6 +110,33 @@ ggplot(iso_areas,
             "Area within a five-minute driving distance\nof a polling location\n(square km)",
             breaks = breaks <- seq(0, 700000, by = 100000),
             labels = breaks / 1000000) +
-  theme_bw()
+  theme_solarized_2()
+```
+
+## Areas and Overlapping Isochrones
+```{r overlapping isochrone}
+
+iso_overlap <- iso_all_modes%>%
+  mutate(num_overlaps = (lengths(st_overlaps(iso_all_modes))))%>%
+  mutate(has_overlaps = num_overlaps > 0)%>%
+  mutate(area = (st_area(iso_all_modes)))
+
+ggplot(iso_overlap, 
+       aes(x = as.numeric(area),
+           y = num_overlaps,
+           color = mode)) +
+  geom_point(alpha = 0.5, size = 1.5) +
+  scale_colour_fivethirtyeight()+
+  #stat_smooth(color = "#dfc7f2", linetype = 2, size = 1.5) +
+  scale_y_continuous(name = "Number of Overlaps with other travel sheds",
+                     labels = c("0", "1", "2", "3", "4", "5", "6"),
+                     breaks = seq(0, 6, by = 1)) +
+  scale_x_continuous(name = "Area of Isochrone in square meters",
+                     labels = c("0 or 700,000", "100,000", "200,000", "300,000", "400,000", "500,000", "600,000", "700,000"),
+                     breaks = seq(0, 700000, by= 100000))+
+  coord_polar(theta = "x")+
+  theme_solarized()
+
+
 ```
 
