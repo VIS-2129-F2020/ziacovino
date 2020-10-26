@@ -35,11 +35,7 @@ accidents <- st_as_sf(read.csv("Vision_Zero_Crash_Records.csv"),
 
 sb_accidents <- accidents[nhood,]
 
-#sb_filter<- accidents%>%
-#              distinct(st_covers(accidents, nhood))
-              
-#sb_accidents <- st_join(accidents, sb_filter)
-```
+
 
 #Pedestrian Ramps
 ramps <- st_read("https://opendata.arcgis.com/datasets/ee5ae0ec9a3e4ba9b12a3f16415cc370_3.geojson",
@@ -49,9 +45,7 @@ ramps <- st_read("https://opendata.arcgis.com/datasets/ee5ae0ec9a3e4ba9b12a3f164
 streets <-st_read("https://opendata.arcgis.com/datasets/cfd1740c2e4b49389f47a9ce2dd236cc_8.geojson",
                   quiet = TRUE)
 
-
-
-
+```
 
 
 
