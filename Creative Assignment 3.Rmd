@@ -50,7 +50,6 @@ zipcodes<- st_read("https://opendata.arcgis.com/datasets/53ea466a189b4f43b3dfb7b
 parks<- st_read("https://opendata.arcgis.com/datasets/2868d370c55d4d458d4ae2224ef8cddd_7.geojson",
                 quiet = TRUE)
 
-
 #Transforming Data
 
 accidents <- accidents %>%
@@ -309,6 +308,19 @@ avg_ramps_dist <- mean(accidents$ramps_dist)
 
 avg_ramps_dist
 
+
+```
+
+```{r}
+parks <- parks %>%
+  mutate(area = set_units(st_area(parks),ft^2))
+
+parks_CT <-parks %>%
+  filter(DISTRICT=="Charlestown")
+
+park_per_bos <- sum(as.numeric(parks$area))/694583
+
+park_per_CT <- sum(as.numeric(parks_CT$area))/19414
 
 ```
 

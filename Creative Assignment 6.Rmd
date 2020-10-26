@@ -1,0 +1,82 @@
+---
+title: "Creative Assignment 6"
+author: "Zoe Iacovino"
+date: "10/25/2020"
+output: html_document
+---
+
+```{r Load Libraries results = 'hide', message = FALSE}
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(htmltools)
+library(htmlwidgets)
+```
+
+```{r Loading Data}
+
+MA_state_plane <- "+proj=lcc +lat_1=41.71666666666667 +lat_2=42.68333333333333 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000 +ellps=GRS80 +units=m +no_defs"
+
+lat_lon_CRS <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
+#Boston Neighborhoods 
+nhood<- st_read("https://opendata.arcgis.com/datasets/3525b0ee6e6b427f9aab5d0a1d0a1a28_0.geojson",
+                 quiet = TRUE)%>%
+          filter(Name == "South Boston")
+
+#Vision Zero Crash Data 
+accidents <- st_as_sf(read.csv("Vision_Zero_Crash_Records.csv"), 
+                      coords = c("long", "lat"), 
+                      crs= lat_lon_CRS)%>%
+              mutate(mode_type = case_when(mode_type == "mv" ~"Vehicle",
+                                           mode_type == "ped" ~"Pedestrian",
+                                           mode_type == "bike" ~ "Bike"))
+
+sb_filter<- accidents%>%
+              distinct(st_covers(accidents, nhood))
+              
+sb_accidents <- st_join(accidents, sb_filter)
+
+
+#Pedestrian Ramps
+ramps <- st_read("https://opendata.arcgis.com/datasets/ee5ae0ec9a3e4ba9b12a3f16415cc370_3.geojson",
+                quiet = TRUE)
+
+#Boston Streets
+streets <-st_read("https://opendata.arcgis.com/datasets/cfd1740c2e4b49389f47a9ce2dd236cc_8.geojson",
+                  quiet = TRUE)
+
+
+
+
+```
+
+
+
+```{r Creating Map}
+
+street_risks <- leaflet(accidents) %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addCircles(fillColor = accidents$mode_type, color = c("green","red", "blue"), 
+             stroke = FALSE, radius = 200,
+              highlightOptions = highlightOptions(fillColor = "black", 
+                                                  fillOpacity = 1),
+             popup = ~mode_type) %>%
+  addControl("Vizion Zero Crash Statistics", position = "topright") %>%
+  addControl('<a href="https://data.boston.gov/dataset/vision-zero-crash-records">Data source</a>',
+             position = "bottomleft")
+
+street_risks
+
+```
+
+
+
+
+```{r}
+saveWidget(street_risks, file = "creative-assignment-6.html")
+```
+
+
+
+

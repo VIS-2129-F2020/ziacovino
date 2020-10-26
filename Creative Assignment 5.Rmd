@@ -1,0 +1,83 @@
+---
+title: "Creative Assignment 5"
+author: "Zoe Iacovino"
+date: "10/18/2020"
+output: pdf_document
+---
+
+```{r Loading Libraries}
+library(raster)
+library(tidyverse)
+library(RStoolbox)
+library(ggthemes)
+library(ggspatial)
+library(osmdata)
+```
+```{r Loading Street Map}
+street_features <- opq(bbox = 'Somerville MA USA') %>%
+  add_osm_feature(key = 'highway') %>%
+  osmdata_sf()
+
+map_streets <- street_features$osm_lines 
+```
+
+
+
+
+```{r E Routes}
+
+e_routes <- stack("Routes-E.tif")
+
+ggRGB(e_routes, r = 1, g = 2, b = 3)
+
+ggplot(map_streets)+
+  ggRGB(e_routes, 
+        r = 1, g = 2, b = 3, ggLayer = TRUE) +
+  geom_sf(alpha = 0.2) +
+  coord_sf(xlim = c(e_routes@extent@xmin, e_routes@extent@xmax),
+           ylim = c(e_routes@extent@ymin, e_routes@extent@ymax)) +
+  theme_map() +
+  annotation_scale() +
+  annotation_north_arrow(location = "tr") +
+  labs(caption = "Street netowrk data Copyright OpenStreetMap contributors")
+
+```
+
+
+
+```{r C Routes}
+
+c_routes <- stack("Routes-C.tif")
+
+ggplot(map_streets)+
+  ggRGB(c_routes, 
+        r = 1, g = 2, b = 3, ggLayer = TRUE) +
+  geom_sf(alpha = 0.2) +
+  coord_sf(xlim = c(c_routes@extent@xmin, c_routes@extent@xmax),
+           ylim = c(c_routes@extent@ymin, c_routes@extent@ymax)) +
+  theme_map() +
+  annotation_scale() +
+  annotation_north_arrow(location = "tr") +
+  labs(caption = "Street netowrk data Copyright OpenStreetMap contributors")
+
+```
+
+
+```{r Z Routes}
+
+z_routes <- stack("Routes-Z.tif")
+
+ggplot(map_streets)+
+  ggRGB(z_routes, 
+        r = 1, g = 2, b = 3, ggLayer = TRUE) +
+  geom_sf(alpha = 0.2) +
+  coord_sf(xlim = c(z_routes@extent@xmin, z_routes@extent@xmax),
+           ylim = c(z_routes@extent@ymin, z_routes@extent@ymax)) +
+  theme_map() +
+  annotation_scale() +
+  annotation_north_arrow(location = "tr") +
+  labs(caption = "Street netowrk data Copyright OpenStreetMap contributors")
+
+
+```
+
