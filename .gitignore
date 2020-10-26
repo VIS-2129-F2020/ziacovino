@@ -40,3 +40,13 @@ vignettes/*.pdf
 
 # Downloaded Spatial Data
 OTP/
+
+#ROSM Cache
+rosm.cache/
+
+#GIS stuff
+info/
+
+#Georeferencing
+Georeferencing/
+

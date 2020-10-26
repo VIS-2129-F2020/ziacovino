@@ -32,11 +32,14 @@ accidents <- st_as_sf(read.csv("Vision_Zero_Crash_Records.csv"),
                                            mode_type == "ped" ~"Pedestrian",
                                            mode_type == "bike" ~ "Bike"))
 
-sb_filter<- accidents%>%
-              distinct(st_covers(accidents, nhood))
-              
-sb_accidents <- st_join(accidents, sb_filter)
 
+sb_accidents <- accidents[nhood,]
+
+#sb_filter<- accidents%>%
+#              distinct(st_covers(accidents, nhood))
+              
+#sb_accidents <- st_join(accidents, sb_filter)
+```
 
 #Pedestrian Ramps
 ramps <- st_read("https://opendata.arcgis.com/datasets/ee5ae0ec9a3e4ba9b12a3f16415cc370_3.geojson",
@@ -49,18 +52,18 @@ streets <-st_read("https://opendata.arcgis.com/datasets/cfd1740c2e4b49389f47a9ce
 
 
 
-```
+
 
 
 
 ```{r Creating Map}
 
-street_risks <- leaflet(accidents) %>%
+street_risks <- leaflet(sb_accidents) %>%
   addProviderTiles(providers$Stamen.TonerLite) %>%
-  addCircles(fillColor = accidents$mode_type, color = c("green","red", "blue"), 
-             stroke = FALSE, radius = 200,
-              highlightOptions = highlightOptions(fillColor = "black", 
-                                                  fillOpacity = 1),
+  addCircles(fillColor = ~mode_type,  
+             stroke = FALSE, radius = 20,
+            #  highlightOptions = highlightOptions(fillColor = "black", 
+             #                                     fillOpacity = 1),
              popup = ~mode_type) %>%
   addControl("Vizion Zero Crash Statistics", position = "topright") %>%
   addControl('<a href="https://data.boston.gov/dataset/vision-zero-crash-records">Data source</a>',
