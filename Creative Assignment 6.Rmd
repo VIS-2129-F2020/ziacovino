@@ -69,9 +69,38 @@ street_risks
 
 
 
+```{r Alternate}
+
+#Creating Iconset (Thank you Jiwon for the model code for using icons, and flaticon as a source!)
+iconSet <- iconList(
+  Vehicle = makeIcon(iconUrl = "https://www.flaticon.com/svg/static/icons/svg/846/846338.svg",
+                 iconWidth = 30, iconHeight = 30),
+  Bike = makeIcon(iconUrl = "https://www.flaticon.com/svg/static/icons/svg/685/685784.svg",
+                 iconWidth = 30, iconHeight = 30),
+  Pedestrian = makeIcon(iconUrl = "https://www.flaticon.com/svg/static/icons/svg/565/565357.svg",
+                 iconWidth = 30, iconHeight = 30))
+
+street_risks2 <- leaflet(sb_accidents) %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addMarkers(icon = iconSet[c(sb_accidents$mode_type)],
+            #highlightOptions = highlightOptions(fillColor = "red", fillOpacity = 1),
+             popup = ~mode_type) %>%
+  addControl("Vizion Zero Crash Statistics", position = "topright") %>%
+  addControl('<a href="https://data.boston.gov/dataset/vision-zero-crash-records">Data source</a>',
+             position = "bottomleft")
+
+street_risks2
+
+
+
+
+
+```
+
+
 
 ```{r}
-saveWidget(street_risks, file = "creative-assignment-6.html")
+saveWidget(street_risks2, file = "creative-assignment-6.html")
 ```
 
 
