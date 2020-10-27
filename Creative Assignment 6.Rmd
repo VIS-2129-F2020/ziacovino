@@ -11,6 +11,7 @@ library(sf)
 library(leaflet)
 library(htmltools)
 library(htmlwidgets)
+library(units)
 ```
 
 ```{r Loading Data}
@@ -44,6 +45,8 @@ ramps <- st_read("https://opendata.arcgis.com/datasets/ee5ae0ec9a3e4ba9b12a3f164
 #Boston Streets
 streets <-st_read("https://opendata.arcgis.com/datasets/cfd1740c2e4b49389f47a9ce2dd236cc_8.geojson",
                   quiet = TRUE)
+           
+
 
 ```
 
@@ -51,23 +54,26 @@ streets <-st_read("https://opendata.arcgis.com/datasets/cfd1740c2e4b49389f47a9ce
 
 
 ```{r Creating Map}
+color_bins <- colorFactor(rainbow(3), sb_accidents$mode_type)
 
 street_risks <- leaflet(sb_accidents) %>%
   addProviderTiles(providers$Stamen.TonerLite) %>%
-  addCircles(fillColor = ~mode_type,  
+  addCircles(fillColor = color_bins(sb_accidents$mode_type),   
              stroke = FALSE, radius = 20,
             #  highlightOptions = highlightOptions(fillColor = "black", 
              #                                     fillOpacity = 1),
              popup = ~mode_type) %>%
   addControl("Vizion Zero Crash Statistics", position = "topright") %>%
   addControl('<a href="https://data.boston.gov/dataset/vision-zero-crash-records">Data source</a>',
-             position = "bottomleft")
+             position = "bottomleft")%>%
+  addLegend(pal = color_bins, values = unique(sb_accidents$mode_type))
 
 street_risks
 
+
 ```
 
-
+Notes for me: iconSet[list] either a c(x,y,x) or df$var. I lined up my icon to match the values i knew they were going to be graphed on, i assume it wouldn't work otherwise. 
 
 ```{r Alternate}
 
@@ -80,14 +86,17 @@ iconSet <- iconList(
   Pedestrian = makeIcon(iconUrl = "https://www.flaticon.com/svg/static/icons/svg/565/565357.svg",
                  iconWidth = 30, iconHeight = 30))
 
+
 street_risks2 <- leaflet(sb_accidents) %>%
   addProviderTiles(providers$Stamen.TonerLite) %>%
   addMarkers(icon = iconSet[c(sb_accidents$mode_type)],
-            #highlightOptions = highlightOptions(fillColor = "red", fillOpacity = 1),
-             popup = ~mode_type) %>%
+             popup = ~mode_type, ~dispatch_ts) %>%
+  addCircles(fillColor = color_bins(sb_accidents$mode_type),   
+             stroke = FALSE, radius = 20) %>%
   addControl("Vizion Zero Crash Statistics", position = "topright") %>%
   addControl('<a href="https://data.boston.gov/dataset/vision-zero-crash-records">Data source</a>',
              position = "bottomleft")
+  addLegend(pal = color_bins, values = unique(sb_accidents$mode_type))
 
 street_risks2
 
@@ -100,7 +109,7 @@ street_risks2
 
 
 ```{r}
-saveWidget(street_risks2, file = "creative-assignment-6.html")
+saveWidget(street_risks2, file = "ca6-sb-collisions.html")
 ```
 
 
