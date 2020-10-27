@@ -71,8 +71,11 @@ street_risks <- leaflet(sb_accidents) %>%
 street_risks
 
 
+<<<<<<< HEAD
 ```
 
+=======
+>>>>>>> 6efab0aa50c0e9510a7d05261e924d458a9c11d2
 Notes for me: iconSet[list] either a c(x,y,x) or df$var. I lined up my icon to match the values i knew they were going to be graphed on, i assume it wouldn't work otherwise. 
 
 ```{r Alternate}
@@ -87,6 +90,10 @@ iconSet <- iconList(
                  iconWidth = 30, iconHeight = 30))
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6efab0aa50c0e9510a7d05261e924d458a9c11d2
 street_risks2 <- leaflet(sb_accidents) %>%
   addProviderTiles(providers$Stamen.TonerLite) %>%
   addMarkers(icon = iconSet[c(sb_accidents$mode_type)],
