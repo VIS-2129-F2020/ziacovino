@@ -5,7 +5,9 @@ date: "11/1/2020"
 output: html_document
 ---
 
-```{r Loading Libraries, results='hide', message=FALSE}
+
+# 2020 Boston Eviction Data
+```{r Loading Libraries, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
 library(tidycensus)
 library(tidyverse)
 options(tigris_use_cache = TRUE)
@@ -26,7 +28,7 @@ lat_lon_CRS <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 
 ```
 
-```{r Loading Data, results = 'hide', message=FALSE}
+```{r Loading Data, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
 #Evictions Data: Evictions Filed in and around Boston. Average for 2012, 2013, 2015, 2016
 evictions <- read.csv("https://evictionlab.org/uploads/boston_20201024.csv")%>%
   group_by(GEOID) %>% 
@@ -34,7 +36,7 @@ evictions <- read.csv("https://evictionlab.org/uploads/boston_20201024.csv")%>%
             filings_avg = sum(filings_avg, na.rm = T))
   
 
-data_source <- 'Map Data From: Peter Hepburn, Renee Louis, and Matthew Desmond. Eviction Tracking System: Version 1.0. Princeton: Princeton University, 2020. <a href = "www.evictionlab.org">www.evictionlab.org</a>. and American Community Survey 5-Year Estimates, 2018'
+data_source <- 'Map Data From: Peter Hepburn, Renee Louis, and Matthew Desmond. Eviction Tracking System: Version 1.0. Princeton: Princeton University, 2020. <a href = "http://www.evictionlab.org">www.evictionlab.org</a>. and American Community Survey 5-Year Estimates, 2018'
 
 #Census Tract Lines and rental data
 v18 <- load_variables(2018, "acs5", cache = FALSE)
@@ -64,13 +66,14 @@ bos_evict <- st_as_sf(inner_join(evictions, full_data, by = "GEOID"),
               subset(select = -NAME.y)%>%
               rename(NAME = NAME.x)
 
-head(bos_evict)  
+
+#head(bos_evict)  
 
 
 ```
 
 
-```{r Making the Heatmap}
+```{r Making the Heatmap, echo = FALSE, warning=FALSE, message=FALSE, results='hide'}
 
 #Making Centroid Points
 tract_points <- st_centroid(
@@ -94,12 +97,20 @@ bos_evict$label <-
         <i> Estimated Net Annual Rental Income per Household:</i><b> $",bos_evict$rIncome, "</b>") %>% 
   lapply(htmltools::HTML)
 
-#Creating color values
+tract_points$label <- 
+  paste(bos_evict$NAME, "<br><b>", 
+        bos_evict$filings_2020, " evictions filed in 2020 </b><br> 
+        <i>Estimated Renter Population:</i><b>", bos_evict$rPop, "</b><br>
+        <i> Estimated Net Annual Rental Income per Household:</i><b> $",bos_evict$rIncome, "</b>") %>% 
+  lapply(htmltools::HTML)
+
+#Creating relevant conditions
 bins <- seq(min(bos_evict$filings_2020),
             max(bos_evict$filings_2020), by = 1)
 pal <- colorNumeric("YlOrRd", 
                     domain = bos_evict$filings_2020,
                     na.color = "#00000000")
+
 #A Blank Raster Layer
 boston_raster <- raster(tract_poly_sp, res=10)
 
@@ -118,7 +129,7 @@ polymap <- leaflet(bos_evict) %>%
               weight = 1, color = "black") %>%
   addLegend(pal = pal, 
             values = ~filings_2020,
-            bins = 3,
+            bins = 5,
             opacity = 0.7, title = "Boston Evictions<br>Filings in 2020",
             position = "topright")%>%
   addControl(data_source,
@@ -127,13 +138,14 @@ polymap <- leaflet(bos_evict) %>%
 pointmap <- leaflet(tract_points) %>%
   addProviderTiles(providers$Stamen.TonerLite) %>%
   addCircles(highlightOptions = highlightOptions(fillOpacity = 1),
+             label = ~label,
              fillColor = ~pal(filings_2020),
              stroke = FALSE, 
-             radius = 50, 
+             radius = ~bos_evict$filings_2020*10, 
              fillOpacity = 1) %>%
   addLegend(pal = pal, 
             values = ~filings_2020,
-            bins = 3,
+            bins = 5,
             opacity = 0.7, title = "Boston Evictions<br>Filings in 2020",
             position = "topright")%>%
   addControl(data_source,
@@ -145,7 +157,7 @@ heat_map <- leaflet(tract_points) %>%
   addRasterImage(idw_interp_clip, colors = pal, opacity = 0.8) %>%
   addLegend(pal = pal, 
             values = ~filings_2020,
-            bins = 3,
+            bins = 5,
             opacity = 0.7, title = "Boston Evictions<br>Filings in 2020",
             position = "topright")%>%
   addControl(data_source,
@@ -155,18 +167,35 @@ heat_map <- leaflet(tract_points) %>%
 
 ```
 
-```{r}
+
+## Polygon Map: 
+This one is probably my favorite for showing eviction filing data. It lets the user/viewer see the number of evictions in each location and put some other relevant data in. 
+```{r Polygon Map, echo=FALSE}
 
 polymap
 
 ```
 
-```{r}
+
+
+## Centroid Point Map
+This is probably the least effective of the three forms, the points are small by default. To check for improvement, I tried adjusting the size by the number of filings, which is much more effective. It is nice to look at but I don't think it necessarily is better--it is harder to see what the geography is that groups the evictions.
+```{r Point Map, echo=FALSE}
 pointmap
 
 ```
 
+
+## Heat Map: Interpolated Centroids
+Perhaps if I had point data for evictions filings the heat map would be more useful but as it is the size of the hot spots actually minimizes the impact--it seems there are only few spots where this is happening but even then they look too isolated from each other.   
 ```{r}
 heat_map
+```
+
+
+
+```{r}
+saveWidget(polymap, file = "evictions-map.html")
+
 ```
 
