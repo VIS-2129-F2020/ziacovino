@@ -18,6 +18,12 @@ library(raster)
 library(gstat)
 library(spatial)
 
+MA_state_plane <- "+proj=lcc +lat_1=41.71666666666667 +lat_2=42.68333333333333 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000 +ellps=GRS80 +units=m +no_defs "
+
+WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
+lat_lon_CRS <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
 ```
 
 ```{r Loading Data, results = 'hide', message=FALSE}
@@ -36,19 +42,82 @@ v18 <- load_variables(2018, "acs5", cache = FALSE)
 # B19054_001 Rental Income of the Last 12 Months
 # B25008_003 Total Population of Renters
 
-acs18_data <- get_acs(state = "MA", county = c("Suffolk","Middlesex"), geography = "tract",
+acs18_data <- get_acs(state = "MA", county = c("Suffolk","Middlesex","Norfolk"), geography = "tract",
                   variables = c("B19054_001", "B25008_003"), geometry = TRUE)%>%
               mutate(variable = case_when(variable == "B19054_001" ~ "rIncome",
                                           variable == "B25008_003" ~ "rPop"))%>%
-              
+              subset(select = -moe)
+#%>%
+              group_by("GEOID")%>%
+              pivot_wider(names_from = "variable",
+                          values_from = "estimate")
+#why does it insist on putting the geometry in the pivoted column names??
 
-cen_sub <- acs18_data[evictions,]
 
+bos_evict <- st_as_sf(inner_join(evictions, acs18_data, by = "GEOID"),
+                      crs= lat_lon_CRS)
 
-bos_evict <- inner_join(evictions, acs18_data, by = "GEOID")
-#are my zeroes zeroes or no datas? 
+head(bos_evict)  
+
 
 ```
 
 
+```{r Making the Heatmap}
+
+#Making Centroid Points
+tract_points <- st_centroid(
+  st_transform(bos_evict, crs = MA_state_plane)) %>%
+  st_transform(WGS84)
+#Transforming the points and polygons to relevant state plane, making distance measurements accurate for heatmap
+tract_pts_sp <- tract_points %>%
+  st_transform(MA_state_plane) %>%
+  as_Spatial()
+
+tract_poly_sp <- bos_evict %>%
+  st_transform(MA_state_plane) %>%
+  as_Spatial()
+#Labels for the pop-ups
+bos_evict$label <- 
+  paste(bos_evict$NAME, "<br>", 
+        bos_evict$filings_2020, " evictions filed in 2020") %>% 
+  lapply(htmltools::HTML)
+#Creating color values
+bins <- seq(min(bos_evict$filings_2020),
+            max(bos_evict$filings_2020), by = 1)
+pal <- colorNumeric("YlOrRd", 
+                    domain = bos_evict$filings_2020,
+                    na.color = "#00000000")
+#A Blank Raster Layer
+boston_raster <- raster(tract_poly_sp, res=10)
+#Interpolating
+gs <- gstat(formula=filings_2020~1, locations=tract_pts_sp)
+idw_interp <- interpolate(boston_raster, gs)
+#clip to extents
+idw_interp_clip <- mask(idw_interp, nhood_poly_sp)
+
+polymap <- leaflet(tract_points) %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addPolygons(highlightOptions = highlightOptions(fillOpacity = 1),
+              label = ~label,
+              fillColor = ~pal(filings_2020),
+              weight = 1, color = "black") %>%
+  addLegend(pal = pal, 
+            values = ~filings_2020,
+            bins = 3,
+            opacity = 0.7, title = "Evictions Filings in 2020",
+            position = "topright")
+
+leaflet(tract_points) %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addRasterImage(idw_interp_clip, colors = pal, opacity = 0.8) %>%
+  addLegend(pal = pal, 
+            values = ~filings_2020,
+            bins = 3,
+            opacity = 0.7, title = "Evictions Filings in 2020",
+            position = "topright")
+
+
+
+```
 
