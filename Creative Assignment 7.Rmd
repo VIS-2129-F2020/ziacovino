@@ -124,8 +124,23 @@ polymap <- leaflet(bos_evict) %>%
   addControl(data_source,
              position = "bottomleft")
 
+pointmap <- leaflet(tract_points) %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addCircles(highlightOptions = highlightOptions(fillOpacity = 1),
+             fillColor = ~pal(filings_2020),
+             stroke = FALSE, 
+             radius = 50, 
+             fillOpacity = 1) %>%
+  addLegend(pal = pal, 
+            values = ~filings_2020,
+            bins = 3,
+            opacity = 0.7, title = "Boston Evictions<br>Filings in 2020",
+            position = "topright")%>%
+  addControl(data_source,
+             position = "bottomleft")
 
-leaflet(tract_points) %>%
+
+heat_map <- leaflet(tract_points) %>%
   addProviderTiles(providers$Stamen.TonerLite) %>%
   addRasterImage(idw_interp_clip, colors = pal, opacity = 0.8) %>%
   addLegend(pal = pal, 
@@ -144,5 +159,14 @@ leaflet(tract_points) %>%
 
 polymap
 
+```
+
+```{r}
+pointmap
+
+```
+
+```{r}
+heat_map
 ```
 
