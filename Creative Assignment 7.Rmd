@@ -163,7 +163,7 @@ heat_map <- leaflet(tract_points) %>%
   addControl(data_source,
              position = "bottomleft")
 
-
+saveWidget(polymap, file = "evictions-map.html")
 
 ```
 
@@ -188,14 +188,11 @@ pointmap
 
 ## Heat Map: Interpolated Centroids
 Perhaps if I had point data for evictions filings the heat map would be more useful but as it is the size of the hot spots actually minimizes the impact--it seems there are only few spots where this is happening but even then they look too isolated from each other.   
-```{r}
+```{r echo=FALSE}
 heat_map
 ```
 
 
 
-```{r}
-saveWidget(polymap, file = "evictions-map.html")
 
-```
 
